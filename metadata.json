@@ -1,0 +1,5 @@
+{
+  "name": "Pastel Medi-Map",
+  "description": "A cute, drag-and-drop hospital room manager powered by Gemini for intelligent data parsing.",
+  "requestFramePermissions": []
+}
