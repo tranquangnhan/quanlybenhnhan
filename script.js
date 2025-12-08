@@ -1,4 +1,11 @@
 
+
+
+
+
+
+
+
 // --- Constants & Data ---
 const RoomType = {
     WARD: 'ward',
@@ -6,13 +13,11 @@ const RoomType = {
     OFFICE: 'office',
     POST_OP: 'post_op',
     INJECTION: 'injection',
-    WAITING: 'waiting',
-    EMERGENCY: 'emergency'
+    WAITING: 'waiting'
 };
 
 const ROOMS = [
     { id: 'isolation', name: 'Cách Ly', type: RoomType.ISOLATION },
-    { id: 'emergency', name: 'Cấp cứu', type: RoomType.EMERGENCY },
     { id: 'ke_bn3', name: 'Kế BN3', type: RoomType.WARD },
     { id: 'bn3', name: 'Phòng BN3', type: RoomType.WARD },
     { id: 'bn2', name: 'Phòng BN2', type: RoomType.WARD },
@@ -25,7 +30,6 @@ const ROOMS = [
 
 const ROOM_COLORS = {
     [RoomType.ISOLATION]: { bg: 'bg-pastel-pink', border: 'border-pastel-pinkDark', text: 'text-red-700' },
-    [RoomType.EMERGENCY]: { bg: 'bg-red-100', border: 'border-red-300', text: 'text-red-900' },
     [RoomType.WARD]: { bg: 'bg-pastel-blue', border: 'border-pastel-blueDark', text: 'text-blue-800' },
     [RoomType.OFFICE]: { bg: 'bg-pastel-purple', border: 'border-pastel-purpleDark', text: 'text-purple-800' },
     [RoomType.POST_OP]: { bg: 'bg-pastel-orange', border: 'border-pastel-orangeDark', text: 'text-orange-800' },
@@ -58,34 +62,14 @@ let currentDetailId = null;
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    // FALLBACK LOGIC:
-    // Try to let React mount first. If React fails (offline/CDN error) or takes too long,
-    // we switch to Vanilla JS mode automatically.
-    
-    setTimeout(() => {
-        const root = document.getElementById('root');
-        
-        // If root exists but is empty, it means React failed to mount.
-        // We initialize the Vanilla JS app instead.
-        if (root && root.childElementCount === 0) {
-            console.log("React failed to mount (likely offline). Switching to Vanilla JS mode.");
-            
-            // Hide the empty React root
-            root.style.display = 'none';
-            
-            // Show the Vanilla JS container
-            const appContainer = document.getElementById('appContainer');
-            if (appContainer) {
-                appContainer.classList.remove('hidden');
-                
-                // Initialize Vanilla App
-                injectTrashZone();
-                renderApp();
-                setupEventListeners();
-                initPet();
-            }
-        }
-    }, 100); // Check after 100ms
+    // Check if we should render offline mode
+    if (!document.getElementById('root')) {
+        document.getElementById('appContainer').classList.remove('hidden');
+        injectTrashZone();
+        renderApp();
+        setupEventListeners();
+        initPet();
+    }
 });
 
 function injectTrashZone() {
@@ -133,7 +117,7 @@ function renderApp() {
             return matchSearch && matchRank;
         });
 
-        const colors = ROOM_COLORS[room.type] || ROOM_COLORS[RoomType.WARD]; // Fallback to Ward if emergency missing
+        const colors = ROOM_COLORS[room.type];
         const isWaiting = room.type === RoomType.WAITING;
         
         let contentHtml = '';
@@ -456,10 +440,7 @@ function downloadDischargePaper() {
              /* Page Setup: A5 Portrait */
              @page Section1 { size: 419.55pt 595.3pt; margin: 1.27cm 1.0cm 1.27cm 2.0cm; }
              div.Section1 { page: Section1; }
-             
-             /* Global Font Settings - 14pt */
-             body { font-family: 'Times New Roman', serif; font-size: 14pt; line-height: 1.2; }
-             
+             body { font-family: 'Times New Roman', serif; font-size: 14pt; line-height: 1.3; }
              .header-table td { border: none; padding: 0; vertical-align: top; }
              .center { text-align: center; }
              .bold { font-weight: bold; }
@@ -467,29 +448,27 @@ function downloadDischargePaper() {
              .uppercase { text-transform: uppercase; }
              .indent { margin-left: 20px; }
              .underline { text-decoration: underline; }
-             .content-line { margin-bottom: 6px; }
-
-             /* Tight header styling */
-             .tight-header div { margin: 0; padding: 0; line-height: 1.2; }
+             .content-line { margin-bottom: 4px; }
+             p { margin: 0; padding: 0; }
            </style>
         </head>
         <body>
            <div class="Section1">
-              <table class="header-table" style="width: 100%; margin-bottom: 10px;">
+              <table class="header-table" style="width: 100%; margin-bottom: 15px;">
                  <tr>
-                    <td class="center tight-header" style="width: 45%;">
-                       <div class="uppercase" style="font-size: 12pt;">TRUNG ĐOÀN 66</div>
-                       <div class="bold underline uppercase" style="font-size: 12pt;">ĐẠI ĐỘI 24</div>
-                       <div class="italic" style="font-size: 12pt;">Số: 02</div>
+                    <td class="center" style="width: 45%;">
+                       <p style="margin: 0; line-height: 1.2;" class="uppercase">TRUNG ĐOÀN 66</p>
+                       <p style="margin: 0; line-height: 1.2;" class="bold underline uppercase">ĐẠI ĐỘI 24</p>
+                       <p style="margin: 0; line-height: 1.2;" class="italic">Số: 02</p>
                     </td>
-                    <td class="center tight-header" style="width: 55%;">
-                       <div class="bold uppercase" style="font-size: 12pt;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-                       <div class="bold underline" style="font-size: 13pt;">Độc lập – Tự do – Hạnh phúc</div>
+                    <td class="center" style="width: 55%;">
+                       <p class="bold uppercase" style="margin: 0; line-height: 1.2;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+                       <p class="bold underline" style="margin: 0; line-height: 1.2;">Độc lập – Tự do – Hạnh phúc</p>
                     </td>
                  </tr>
               </table>
 
-              <h1 class="center bold uppercase" style="font-size: 16pt; margin: 20px 0 20px 0;">GIẤY RA VIỆN</h1>
+              <h1 class="center bold uppercase" style="font-size: 16pt; margin: 20px 0 15px 0;">GIẤY RA VIỆN</h1>
 
               <div style="text-align: justify;">
                  <div class="content-line">Họ và tên: <span class="bold uppercase" style="font-size: 14pt;">${p.name}</span></div>
@@ -510,13 +489,13 @@ function downloadDischargePaper() {
                  <div class="content-line">Chấp hành kỷ luật của bệnh nhân khi nằm bệnh xá: <span class="bold">Tốt.</span></div>
               </div>
 
-              <table class="header-table" style="width: 100%; margin-top: 20px;">
+              <table class="header-table" style="width: 100%; margin-top: 30px;">
                  <tr>
-                    <td class="center bold" style="width: 50%; font-size: 13pt;">
+                    <td class="center bold" style="width: 50%; font-size: 14pt;">
                        Y TÁ HÀNH CHÍNH
                     </td>
-                    <td class="center bold" style="width: 50%; font-size: 13pt;">
-                       <div class="italic" style="font-weight: normal; margin-bottom: 3px; font-size: 13pt;">Ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm ${today.getFullYear()}</div>
+                    <td class="center bold" style="width: 50%; font-size: 14pt;">
+                       <div class="italic" style="font-weight: normal; margin-bottom: 3px;">Ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm ${today.getFullYear()}</div>
                        BỆNH XÁ TRƯỞNG
                     </td>
                  </tr>
@@ -669,18 +648,6 @@ function downloadWord() {
         return r ? r.name.replace('Phòng ', '').replace('Cách Ly', 'CL') : id;
     };
 
-    const timeCol = '<col style="width: 40px;" />';
-    const colGroupHTML = `
-        <colgroup>
-            <col style="width: 30px;" />
-            <col style="width: 150px;" />
-            <col style="width: 50px;" />
-            <col style="width: 40px;" />
-            ${slots1.map(() => timeCol).join('')}
-            ${slots2.map(() => timeCol).join('')}
-        </colgroup>
-    `;
-
     const preHtml = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' 
             xmlns:w='urn:schemas-microsoft-com:office:word' 
@@ -712,7 +679,6 @@ function downloadWord() {
             <p style="color: red; font-weight: bold; margin: 5px 0;">Chú ý: Nếu cho uống Paracetamol 500mg thì ghi rõ vào ô</p>
           </div>
           <table>
-            ${colGroupHTML}
             <thead>
               <tr style="background-color: #f3f4f6;">
                 <th rowspan="2" style="width: 30px;">STT</th>

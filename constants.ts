@@ -3,7 +3,7 @@ import { RoomData, RoomType } from './types';
 
 export const INITIAL_ROOMS: RoomData[] = [
   { id: 'isolation', name: 'Cách Ly', type: RoomType.ISOLATION },
-  { id: 'emergency', name: 'Cấp cứu', type: RoomType.EMERGENCY },
+  { id: 'emergency', name: 'Cấp Cứu', type: RoomType.EMERGENCY },
   { id: 'ke_bn3', name: 'Kế BN3', type: RoomType.WARD },
   { id: 'bn3', name: 'Phòng BN3', type: RoomType.WARD },
   { id: 'bn2', name: 'Phòng BN2', type: RoomType.WARD },
@@ -16,7 +16,7 @@ export const INITIAL_ROOMS: RoomData[] = [
 
 export const ROOM_COLORS: Record<string, { bg: string, border: string, text: string }> = {
   [RoomType.ISOLATION]: { bg: 'bg-pastel-pink', border: 'border-pastel-pinkDark', text: 'text-red-700' },
-  [RoomType.EMERGENCY]: { bg: 'bg-red-100', border: 'border-red-300', text: 'text-red-900' },
+  [RoomType.EMERGENCY]: { bg: 'bg-red-100', border: 'border-red-300', text: 'text-red-800' },
   [RoomType.WARD]: { bg: 'bg-pastel-blue', border: 'border-pastel-blueDark', text: 'text-blue-800' },
   [RoomType.OFFICE]: { bg: 'bg-pastel-purple', border: 'border-pastel-purpleDark', text: 'text-purple-800' },
   [RoomType.POST_OP]: { bg: 'bg-pastel-orange', border: 'border-pastel-orangeDark', text: 'text-orange-800' },

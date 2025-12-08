@@ -11,6 +11,7 @@ import PatientDetails from './components/PatientDetails';
 import PatientMeeple from './components/PatientMeeple';
 import RoamingPet from './components/RoamingPet';
 import TemperatureSheet from './components/TemperatureSheet';
+import DischargePaperModal from './components/DischargePaperModal';
 
 // Internal Trash Zone Component
 const TrashZone: React.FC<{ isDragging: boolean }> = ({ isDragging }) => {
@@ -56,6 +57,10 @@ const App: React.FC = () => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isParsing, setIsParsing] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  
+  // Discharge Modal State
+  const [isDischargeOpen, setIsDischargeOpen] = useState(false);
+  const [dischargePatient, setDischargePatient] = useState<Patient | null>(null);
   
   const [filters, setFilters] = useState<FilterState>({
     search: '',
@@ -236,12 +241,6 @@ const App: React.FC = () => {
                 onPatientDoubleClick={handleToggleLongTerm}
               />
               <RoomZone 
-                room={INITIAL_ROOMS.find(r => r.id === 'emergency')!} 
-                patients={getPatientsInRoom('emergency')} 
-                onPatientClick={setSelectedPatient}
-                onPatientDoubleClick={handleToggleLongTerm}
-              />
-              <RoomZone 
                 room={INITIAL_ROOMS.find(r => r.id === 'ke_bn3')!} 
                 patients={getPatientsInRoom('ke_bn3')} 
                 onPatientClick={setSelectedPatient}
@@ -292,13 +291,19 @@ const App: React.FC = () => {
               />
             </div>
 
-            <div className="w-full md:w-44 ml-12">
+            <div className="w-full md:w-44 ml-12 flex flex-col gap-3">
               <RoomZone 
                 room={INITIAL_ROOMS.find(r => r.id === 'post_op')!} 
                 patients={getPatientsInRoom('post_op')} 
                 onPatientClick={setSelectedPatient}
                 onPatientDoubleClick={handleToggleLongTerm}
                 className="min-h-[144px]"
+              />
+              <RoomZone 
+                room={INITIAL_ROOMS.find(r => r.id === 'emergency')!} 
+                patients={getPatientsInRoom('emergency')} 
+                onPatientClick={setSelectedPatient}
+                onPatientDoubleClick={handleToggleLongTerm}
               />
             </div>
 
@@ -326,8 +331,18 @@ const App: React.FC = () => {
         onDelete={handleDeletePatient}
         onUpdate={handleUpdatePatient}
         roomName={INITIAL_ROOMS.find(r => r.id === selectedPatient?.roomId)?.name}
+        onOpenDischarge={(p) => {
+            setDischargePatient(p);
+            setIsDischargeOpen(true);
+        }}
       />
       
+      <DischargePaperModal 
+        patient={dischargePatient}
+        isOpen={isDischargeOpen}
+        onClose={() => setIsDischargeOpen(false)}
+      />
+
       {isPrinting && (
         <TemperatureSheet 
           patients={filteredPatients}

@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pastel Medi-Map</title>
+    <title>Đại đội Quân Y 24</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -45,26 +46,24 @@
       }
     </script>
     <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom": "https://esm.sh/react-dom@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "@google/genai": "https://esm.sh/@google/genai@0.1.1",
-    "@dnd-kit/core": "https://esm.sh/@dnd-kit/core@6.1.0?external=react,react-dom",
-    "lucide-react": "https://esm.sh/lucide-react@0.300.0?external=react,react-dom",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
-    "react/": "https://aistudiocdn.com/react@^19.2.1/"
-  }
-}
-</script>
+    {
+      "imports": {
+        "react/": "https://aistudiocdn.com/react@^19.2.0/",
+        "react": "https://aistudiocdn.com/react@^19.2.0",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+        "@dnd-kit/core": "https://aistudiocdn.com/@dnd-kit/core@^6.3.1",
+        "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0"
+      }
+    }
+    </script>
 <link rel="stylesheet" href="/index.css">
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans overflow-x-hidden pb-20">
     <!-- React Root -->
     <div id="root"></div>
 
-    <!-- Standalone Mode Containers (Hidden by default when React mounts) -->
+    <!-- Standalone Mode Containers (Hidden by default when React mounts, but used if running script.js) -->
     <div id="petContainer"></div>
 
     <!-- Global Delete Modal for Vanilla JS -->
@@ -94,7 +93,7 @@
     <div id="appContainer" class="hidden p-4 md:p-6 lg:p-8 max-w-7xl mx-auto relative print:hidden">
          <!-- Navbar (Simple) -->
          <header class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4 shadow-sm mb-6 rounded-2xl">
-             <h1 class="text-xl font-bold">Pastel Medi-Map (Offline)</h1>
+             <h1 class="text-xl font-bold">Đại đội Quân Y 24 (Offline)</h1>
              <div class="flex gap-2">
                  <button id="printBtn" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-bold">In Phiếu</button>
                  <button id="importBtn" class="bg-gray-900 text-white px-4 py-2 rounded-lg font-bold">Import</button>
@@ -118,7 +117,6 @@
          <div class="flex flex-wrap items-start justify-start gap-3">
              <div class="w-full md:w-44 flex flex-col gap-3">
                  <div id="isolation-zone" class="h-auto"></div>
-                 <div id="emergency-zone" class="h-auto"></div>
                  <div id="ke_bn3-zone" class="h-auto"></div>
              </div>
              <div class="w-full md:w-44"><div id="bn3-zone"></div></div>
@@ -231,9 +229,6 @@
             <div id="printableArea" class="bg-white shadow-xl" style="width: 280mm; min-height: 190mm; padding: 15px;"></div>
         </div>
     </div>
-
-    <!-- Vanilla JS Script (Defer to not block rendering, runs only if downloaded offline) -->
-    <script src="script.js" defer></script>
 <script type="module" src="/index.tsx"></script>
 </body>
 </html>

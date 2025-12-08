@@ -11,6 +11,7 @@ export interface Patient {
   roomId: string; // The ID of the room they are currently in
   monitoringType?: '3h' | 'stc' | 'none'; // 3 hours, Sang/Trua/Chieu, or None
   isLongTerm?: boolean; // Flag for long-term treatment (red marker)
+  monitorVitals?: boolean; // Flag to monitor Pulse and Blood Pressure (Mạch, HA)
 }
 
 export interface RoomData {
