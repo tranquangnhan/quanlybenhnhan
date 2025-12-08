@@ -29,7 +29,7 @@ const TrashZone: React.FC<{ isDragging: boolean }> = ({ isDragging }) => {
     >
        <div className={`
          transition-transform duration-200
-         ${isOver ? 'scale-125 text-red-600' : 'text-gray-400'}
+         ${isOver ? ' text-red-600' : 'text-gray-400'}
        `}>
           <Trash2 size={40} />
        </div>
