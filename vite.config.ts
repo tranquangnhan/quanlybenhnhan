@@ -18,6 +18,13 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
-      }
+      },
+       build: {
+        minify: "esbuild",
+        sourcemap: false,
+        rollupOptions: {
+          treeshake: true,
+        },
+      },
     };
 });
