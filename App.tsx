@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, useSensor, useSensors, PointerSensor, TouchSensor, useDroppable } from '@dnd-kit/core';
-import { Filter, Upload, Search, Printer, Trash2, AlertTriangle, X } from 'lucide-react';
+import { Filter, Upload, Search, Printer, Trash2, AlertTriangle, X, FileText, Cross } from 'lucide-react';
 import { Patient, FilterState, RoomData } from './types';
 import { INITIAL_ROOMS } from './constants';
 import { parsePatientData } from './services/geminiService';
@@ -10,8 +10,9 @@ import Importer from './components/Importer';
 import PatientDetails from './components/PatientDetails';
 import PatientMeeple from './components/PatientMeeple';
 import RoamingPet from './components/RoamingPet';
-import TemperatureSheet from './components/TemperatureSheet';
 import DischargePaperModal from './components/DischargePaperModal';
+import BulkDischargeModal from './components/BulkDischargeModal';
+import TemperatureSheet from './components/TemperatureSheet';
 
 // Internal Trash Zone Component
 const TrashZone: React.FC<{ isDragging: boolean }> = ({ isDragging }) => {
@@ -29,7 +30,7 @@ const TrashZone: React.FC<{ isDragging: boolean }> = ({ isDragging }) => {
     >
        <div className={`
          transition-transform duration-200
-         ${isOver ? ' text-red-600' : 'text-gray-400'}
+         ${isOver ? 'scale-125 text-red-600' : 'text-gray-400'}
        `}>
           <Trash2 size={40} />
        </div>
@@ -53,10 +54,11 @@ const App: React.FC = () => {
   });
 
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isTempSheetOpen, setIsTempSheetOpen] = useState(false);
+  const [isBulkDischargeOpen, setIsBulkDischargeOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isParsing, setIsParsing] = useState(false);
-  const [isPrinting, setIsPrinting] = useState(false);
   
   // Discharge Modal State
   const [isDischargeOpen, setIsDischargeOpen] = useState(false);
@@ -158,12 +160,11 @@ const App: React.FC = () => {
       {/* Navbar */}
       <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4 shadow-sm print:hidden">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-tr from-pink-400 to-purple-400 rounded-xl shadow-lg flex items-center justify-center text-white font-bold text-lg">
-            🏥
+          <div className="w-10 h-10 bg-red-600 rounded-xl shadow-lg flex items-center justify-center text-white font-bold text-lg">
+            <Cross size={24} fill="white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-800 leading-tight">Pastel Medi-Map</h1>
-            <p className="text-xs text-gray-500 font-medium">Infirmary Management System</p>
+            <h1 className="text-xl font-bold text-gray-800 leading-tight">Đại đội QY 24</h1>
           </div>
         </div>
 
@@ -191,11 +192,19 @@ const App: React.FC = () => {
 
         <div className="flex gap-2">
           <button 
-            onClick={() => setIsPrinting(true)}
+            onClick={() => setIsTempSheetOpen(true)}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg shadow-blue-200 flex items-center gap-2 transition transform active:scale-95"
           >
             <Printer size={18} />
-            <span className="hidden sm:inline">In Phiếu (All)</span>
+            <span className="hidden sm:inline">In Phiếu Theo Dõi</span>
+          </button>
+          
+          <button 
+            onClick={() => setIsBulkDischargeOpen(true)}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg shadow-green-200 flex items-center gap-2 transition transform active:scale-95"
+          >
+            <FileText size={18} />
+            <span className="hidden sm:inline">Xuất Giấy Ra Viện</span>
           </button>
 
           <button 
@@ -343,10 +352,16 @@ const App: React.FC = () => {
         onClose={() => setIsDischargeOpen(false)}
       />
 
-      {isPrinting && (
+      <BulkDischargeModal 
+        patients={patients}
+        isOpen={isBulkDischargeOpen}
+        onClose={() => setIsBulkDischargeOpen(false)}
+      />
+
+      {isTempSheetOpen && (
         <TemperatureSheet 
-          patients={filteredPatients}
-          onClose={() => setIsPrinting(false)}
+          patients={patients} 
+          onClose={() => setIsTempSheetOpen(false)} 
         />
       )}
 
