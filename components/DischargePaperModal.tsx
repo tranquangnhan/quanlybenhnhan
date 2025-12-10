@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Patient } from '../types';
 import { X, FileText, ClipboardList } from 'lucide-react';
@@ -17,6 +18,20 @@ const DischargePaperModal: React.FC<Props> = ({ patient, isOpen, onClose }) => {
   const [paperNumber, setPaperNumber] = useState('01');
   const [role, setRole] = useState('');
   const [rank, setRank] = useState('');
+  const [diagnosis, setDiagnosis] = useState('');
+
+  // Helper to clean diagnosis string
+  const cleanDiagnosis = (d: string) => {
+    if (!d) return "";
+    let cleaned = d;
+    // Remove "Sốt," or "Sốt " at the start (case insensitive)
+    cleaned = cleaned.replace(/^Sốt[,]?\s+/i, '');
+    // Remove "N" followed by numbers at the end (e.g. N1, N12)
+    cleaned = cleaned.replace(/\s*N\d+$/i, '');
+    // Capitalize first letter
+    cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+    return cleaned.trim();
+  };
 
   const mapRank = (r: string) => {
     const lower = (r || '').toLowerCase();
@@ -51,6 +66,9 @@ const DischargePaperModal: React.FC<Props> = ({ patient, isOpen, onClose }) => {
         else if (r === 'bt') mappedRole = 'Trung đội trưởng';
         else if (r === 'ct') mappedRole = 'Đại đội trưởng';
         setRole(mappedRole);
+
+        // Clean and set Diagnosis
+        setDiagnosis(cleanDiagnosis(patient.diagnosis));
         
         const d = (patient.diagnosis || '').toLowerCase();
         
@@ -95,7 +113,7 @@ const DischargePaperModal: React.FC<Props> = ({ patient, isOpen, onClose }) => {
       const medsHtml = treatments.split('\n').map(line => `<div style="margin-bottom: 2px;">${line}</div>`).join('');
       
       const mappedUnit = mapUnit(patient.unit);
-
+      
       const htmlContent = `
         <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head>
@@ -169,7 +187,7 @@ const DischargePaperModal: React.FC<Props> = ({ patient, isOpen, onClose }) => {
                 <div class="content-line italic">
                     Chẩn đoán: 
                     <span style="font-weight: bold; font-style: italic;">
-                        ${patient.diagnosis} đã ổn định
+                        ${diagnosis} đã ổn định
                     </span>
                 </div>
                  
@@ -270,6 +288,16 @@ const DischargePaperModal: React.FC<Props> = ({ patient, isOpen, onClose }) => {
                     />
                 </div>
                 
+                <div>
+                     <label className="block text-gray-600 text-xs font-bold mb-1">Chẩn đoán (Đã xử lý)</label>
+                     <input 
+                        type="text" 
+                        value={diagnosis} 
+                        onChange={(e) => setDiagnosis(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-400 outline-none font-semibold text-gray-700"
+                     />
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-gray-600 text-xs font-bold mb-1">Ngày ra viện</label>
