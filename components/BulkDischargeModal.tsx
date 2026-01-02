@@ -177,17 +177,17 @@ const BulkDischargeModal: React.FC<Props> = ({ patients, isOpen, onClose, onSave
             <div class="Section1" style="margin: 1.0cm; font-family: 'Times New Roman', serif; font-size: 14pt; line-height: 1.3;">
               <table style="width: 100%; margin-bottom: 15px; border-collapse: collapse;">
                  <tr>
-                    <td style="width: 45%; padding: 0; vertical-align: top;">
-                        <table style="width: auto; border-collapse: collapse;">
-                            <tr>
-                                <td style="text-align: left;">
-                                    <p style="margin: 0; line-height: 1.2; font-size: 13pt; text-transform: uppercase;">TRUNG ĐOÀN 66</p>
-                                    <p style="margin: 0; line-height: 1.2; font-size: 13pt; text-align: center; font-weight: bold; text-transform: uppercase;">ĐẠI ĐỘI 24</p>
-                                    <p style="margin: 0; line-height: 1.2; font-size: 13pt; text-align: center; font-style: italic;">Số: ${paperNumber}</p>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
+                 <td style="width: 45%; padding-left: 0; vertical-align: top;">
+                    <table style="width: auto; border-collapse: collapse;">
+                        <tr>
+                            <td style="text-align: left;">
+                                <p style="margin: 0; line-height: 1.2; font-size: 13pt; text-transform: uppercase;">TRUNG ĐOÀN 66</p>
+                                <p style="margin: 0; line-height: 1.2; font-size: 13pt; text-align: center; font-weight: bold; text-transform: uppercase;">ĐẠI ĐỘI 24</p>
+                                <p style="margin: 0; line-height: 1.2; font-size: 13pt; text-align: center; font-style: italic;">Số: ${paperNumber}</p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
                     <td style="width: 55%; text-align: center; vertical-align: top;">
                        <p style="margin: 0; line-height: 1.2; font-size: 13pt; text-transform: uppercase;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
                        <p style="margin:0; line-height:1.2; font-size:13pt; text-align:center;">
@@ -200,14 +200,14 @@ const BulkDischargeModal: React.FC<Props> = ({ patients, isOpen, onClose, onSave
               <h1 style="text-align: center; font-weight: bold; text-transform: uppercase; font-size: 16pt; margin: 20px 0 15px 0;">GIẤY RA VIỆN</h1>
 
               <div style="text-align: justify;">
-                 <div style="margin-bottom: 4px;">Họ và tên: <span style="font-weight: bold; text-transform: uppercase; font-size: 14pt;">${p.name}</span></div>
+                 <div style="margin-bottom: 4px;">Họ và tên: <span style="font-weight: bold; text-transform: uppercase; font-size: 14pt;">${p.name.toUpperCase()}</span></div>
                  <div style="margin-bottom: 4px;">Năm sinh: ${p.dob}</div>
                  <div style="margin-bottom: 4px;">Quân hàm: ${rank}</div>
                  <div style="margin-bottom: 4px;">Chức vụ: ${role}</div>
                  <div style="margin-bottom: 4px;">Đơn vị: ${mapUnit(p.unit)}</div>
                  <div style="margin-bottom: 4px;">Quê quán: ${hometown}</div>
                  <div style="margin-bottom: 4px;">Ngày vào viện: ${p.admissionDate} – Ngày ra viện: ${formattedDischargeDate}</div>
-                 <div style="margin-bottom: 4px;">Chẩn đoán: <span style="font-style: italic; font-weight: bold;">${finalDiagnosis} đã ổn định</span></div>
+                 <div style="margin-bottom: 4px; font-style: italic;">Chẩn đoán: <span style="font-weight: bold;">${finalDiagnosis} đã ổn định</span></div>
                  
                  <div style="margin-bottom: 4px;">Thuốc điều trị:</div>
                  <div style="margin-left: 20px; margin-bottom: 5px;">${medsHtml}</div>

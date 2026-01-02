@@ -14,7 +14,6 @@ import DischargePaperModal from './components/DischargePaperModal';
 import BulkDischargeModal from './components/BulkDischargeModal';
 import TemperatureSheet from './components/TemperatureSheet';
 
-// Internal Trash Zone Component
 const TrashZone: React.FC<{ isDragging: boolean }> = ({ isDragging }) => {
   const { setNodeRef, isOver } = useDroppable({ id: 'trash-zone' });
   
@@ -22,10 +21,10 @@ const TrashZone: React.FC<{ isDragging: boolean }> = ({ isDragging }) => {
     <div 
       ref={setNodeRef}
       className={`
-        fixed right-0 top-0 bottom-0 w-24 z-50 flex flex-col items-center justify-center
+        fixed right-0 top-0 bottom-0 w-28 z-50 flex flex-col items-center justify-center
         transition-all duration-300 ease-in-out border-l-4
         ${isDragging ? 'translate-x-0' : 'translate-x-full'}
-        ${isOver ? 'bg-red-100 border-red-500 shadow-[inset_10px_0_20px_rgba(255,0,0,0.2)]' : 'bg-gray-100/80 border-gray-300 backdrop-blur-sm'}
+        ${isOver ? 'bg-red-50 border-red-500 shadow-[inset_10px_0_20px_rgba(255,0,0,0.1)]' : 'bg-gray-100/80 border-gray-200 backdrop-blur-sm'}
       `}
     >
        <div className={`
@@ -34,21 +33,20 @@ const TrashZone: React.FC<{ isDragging: boolean }> = ({ isDragging }) => {
        `}>
           <Trash2 size={40} />
        </div>
-       <span className={`mt-2 font-bold text-xs ${isOver ? 'text-red-600' : 'text-gray-500'}`}>
-          Kéo vào để xóa
+       <span className={`mt-3 font-bold text-xs ${isOver ? 'text-red-600' : 'text-gray-500'}`}>
+          THẢ ĐỂ XÓA
        </span>
     </div>
   );
 };
 
 const App: React.FC = () => {
-  // Initialize state from LocalStorage if available
   const [patients, setPatients] = useState<Patient[]>(() => {
     try {
       const saved = localStorage.getItem('pastel_medimap_patients');
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
-      console.error("Failed to load patients from local storage", e);
+      console.error("Failed to load patients", e);
       return [];
     }
   });
@@ -60,7 +58,6 @@ const App: React.FC = () => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isParsing, setIsParsing] = useState(false);
   
-  // Discharge Modal State
   const [isDischargeOpen, setIsDischargeOpen] = useState(false);
   const [dischargePatient, setDischargePatient] = useState<Patient | null>(null);
   
@@ -70,7 +67,6 @@ const App: React.FC = () => {
     date: '',
   });
 
-  // Persist patients to LocalStorage whenever the list changes
   useEffect(() => {
     localStorage.setItem('pastel_medimap_patients', JSON.stringify(patients));
   }, [patients]);
@@ -80,7 +76,6 @@ const App: React.FC = () => {
     useSensor(TouchSensor)
   );
 
-  // Calculate Next Paper Number
   const nextPaperNumber = useMemo(() => {
     let maxNum = 0;
     patients.forEach(p => {
@@ -94,22 +89,58 @@ const App: React.FC = () => {
     return (maxNum + 1).toString().padStart(2, '0');
   }, [patients]);
 
-  // Parsing Handler
   const handleImport = async (text: string) => {
     setIsParsing(true);
-    const newPatients = await parsePatientData(text);
-    setPatients((prev) => [...prev, ...newPatients]);
+    const parsedPatients = await parsePatientData(text);
+
+    // 1. Lọc bỏ các bản ghi thiếu thông tin bắt buộc (STT, CB, CV, ĐV)
+    // Vì trường STT không lưu trong object Patient, ta kiểm tra các trường Rank(CB), Role(CV), Unit(ĐV)
+    const validStructurePatients = parsedPatients.filter(p => {
+        const hasRank = p.rank && p.rank.trim() !== '';
+        const hasRole = p.role && p.role.trim() !== '';
+        const hasUnit = p.unit && p.unit.trim() !== '';
+        return hasRank && hasRole && hasUnit;
+    });
+
+    // 2. Lọc bỏ các bản ghi trùng lặp
+    // Tạo chữ ký (signature) cho các bệnh nhân hiện có: Tên + Đơn vị + Năm sinh
+    const existingSignatures = new Set(patients.map(p => 
+        `${p.name?.toLowerCase().trim()}|${p.unit?.toLowerCase().trim()}|${p.dob?.trim()}`
+    ));
+
+    const newUniquePatients = validStructurePatients.filter(p => {
+        const signature = `${p.name?.toLowerCase().trim()}|${p.unit?.toLowerCase().trim()}|${p.dob?.trim()}`;
+        return !existingSignatures.has(signature);
+    });
+    
+    // Tính toán số lượng bị lọc
+    const duplicatesCount = validStructurePatients.length - newUniquePatients.length;
+    const invalidCount = parsedPatients.length - validStructurePatients.length;
+
+    if (newUniquePatients.length > 0) {
+        setPatients((prev) => [...prev, ...newUniquePatients]);
+        alert(
+            `Đã nhập thành công: ${newUniquePatients.length} BN.\n` + 
+            `- Trùng lặp (đã bỏ qua): ${duplicatesCount}\n` + 
+            `- Thiếu thông tin CB/CV/ĐV (đã bỏ qua): ${invalidCount}`
+        );
+    } else {
+        alert(
+            `Không có bệnh nhân mới nào được nhập.\n` + 
+            `- Trùng lặp: ${duplicatesCount}\n` + 
+            `- Thiếu thông tin: ${invalidCount}`
+        );
+    }
+
     setIsParsing(false);
     setIsImportOpen(false);
   };
 
-  // Delete Handler
   const handleDeletePatient = (id: string) => {
     setSelectedPatient(null);
     setPatients((prev) => prev.filter((p) => p.id !== id));
   };
 
-  // Update Handler
   const handleUpdatePatient = (id: string, updates: Partial<Patient>) => {
     setPatients((prev) => prev.map(p => p.id === id ? { ...p, ...updates } : p));
     if (selectedPatient && selectedPatient.id === id) {
@@ -117,19 +148,16 @@ const App: React.FC = () => {
     }
   };
 
-  // Specific Handler for Discharge Info
   const handleSaveDischargeInfo = (id: string, info: DischargeInfo) => {
     handleUpdatePatient(id, { dischargeInfo: info });
   };
 
-  // Toggle Long Term Status Handler
   const handleToggleLongTerm = (id: string) => {
     setPatients((prev) => prev.map(p => 
       p.id === id ? { ...p, isLongTerm: !p.isLongTerm } : p
     ));
   };
 
-  // Drag Handler
   const handleDragStart = (event: any) => {
     setActiveId(event.active.id);
   };
@@ -140,10 +168,8 @@ const App: React.FC = () => {
 
     if (over) {
       if (over.id === 'trash-zone') {
-        // Handle Delete via Drop -> Instant Delete
         handleDeletePatient(active.id as string);
       } else if (active.id !== over.id) {
-        // Handle Move Room
         setPatients((items) =>
           items.map((p) => {
             if (p.id === active.id) {
@@ -156,7 +182,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Filtering Logic
   const filteredPatients = useMemo(() => {
     return patients.filter((p) => {
       const matchSearch = p.name.toLowerCase().includes(filters.search.toLowerCase()) || 
@@ -167,89 +192,83 @@ const App: React.FC = () => {
     });
   }, [patients, filters]);
 
-  // Derived state for dragging overlay
   const activePatient = useMemo(() => patients.find(p => p.id === activeId), [activeId, patients]);
-
-  // Derived state for room population
   const getPatientsInRoom = (roomId: string) => filteredPatients.filter(p => p.roomId === roomId);
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800 pb-20 overflow-x-hidden">
       
-      {/* Navbar */}
-      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4 shadow-sm print:hidden">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-red-600 rounded-xl shadow-lg flex items-center justify-center text-white font-bold text-lg">
-            <Cross size={24} fill="white" />
+      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200 px-8 py-5 flex flex-wrap items-center justify-between gap-6 shadow-sm print:hidden">
+        <div className="flex items-center gap-4">
+          <div className="relative group">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-rose-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
+            <div className="relative w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl shadow-lg flex items-center justify-center border border-white/20 overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/20 to-transparent"></div>
+                <div className="bg-white p-1.5 rounded-full shadow-sm">
+                     <Cross size={20} className="text-red-600" strokeWidth={3} />
+                </div>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-800 leading-tight">Đại đội QY 24</h1>
+
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold text-gray-900 tracking-tight leading-none uppercase">Đại đội QY 24</h1>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1.5">Quân Y Việt Nam</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 bg-gray-100 p-1.5 rounded-2xl border border-gray-200 shadow-inner overflow-hidden max-w-full">
-           <Search size={18} className="ml-2 text-gray-400" />
+        <div className="flex items-center gap-3 bg-gray-100 p-1.5 rounded-2xl border border-gray-200 shadow-inner max-w-full">
+           <Search size={20} className="ml-2 text-gray-400" />
            <input 
              type="text" 
-             placeholder="Search name, diagnosis..." 
-             className="bg-transparent border-none outline-none text-sm w-40 md:w-64 placeholder-gray-400 text-gray-700"
+             placeholder="Tìm tên, chẩn đoán..." 
+             className="bg-transparent border-none outline-none text-sm font-semibold w-40 md:w-64 placeholder-gray-400 text-gray-800"
              value={filters.search}
              onChange={(e) => setFilters(prev => ({...prev, search: e.target.value}))}
            />
-           <div className="h-4 w-[1px] bg-gray-300 mx-1"></div>
+           <div className="h-5 w-[1px] bg-gray-300 mx-1"></div>
            <select 
-              className="bg-transparent text-xs font-semibold text-gray-600 outline-none cursor-pointer"
+              className="bg-transparent text-xs font-bold text-gray-600 outline-none cursor-pointer px-1"
               onChange={(e) => setFilters(prev => ({...prev, rank: e.target.value}))}
            >
-             <option value="">All Ranks</option>
+             <option value="">Cấp Bậc</option>
              <option value="h1">H1</option>
              <option value="h2">H2</option>
              <option value="h3">H3</option>
-             <option value="sq">Officers</option>
+             <option value="sq">Sĩ Quan</option>
            </select>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <button 
             onClick={() => setIsTempSheetOpen(true)}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg shadow-blue-200 flex items-center gap-2 transition transform active:scale-95"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-md shadow-blue-100 flex items-center gap-2 transition transform active:scale-95 text-xs"
           >
-            <Printer size={18} />
-            <span className="hidden sm:inline">In Phiếu Theo Dõi</span>
+            <Printer size={18} /> IN PHIẾU
           </button>
           
           <button 
             onClick={() => setIsBulkDischargeOpen(true)}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl font-semibold shadow-lg shadow-green-200 flex items-center gap-2 transition transform active:scale-95"
+            className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-md shadow-green-100 flex items-center gap-2 transition transform active:scale-95 text-xs"
           >
-            <FileText size={18} />
-            <span className="hidden sm:inline">Xuất Giấy Ra Viện</span>
+            <FileText size={18} /> XUẤT GIẤY RV
           </button>
 
           <button 
             onClick={() => setIsImportOpen(true)}
-            className="bg-gray-900 hover:bg-black text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-gray-300/50 flex items-center gap-2 transition transform active:scale-95"
+            className="bg-gray-900 hover:bg-black text-white px-5 py-2.5 rounded-xl font-bold shadow-md shadow-gray-300 flex items-center gap-2 transition transform active:scale-95 text-xs"
           >
-            <Upload size={18} />
-            <span className="hidden sm:inline">Import Data</span>
+            <Upload size={18} /> NHẬP DATA
           </button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto relative print:hidden">
+      <main className="p-6 md:p-8 max-w-[1400px] mx-auto relative print:hidden">
         <RoamingPet />
         
-        <DndContext 
-          sensors={sensors} 
-          onDragStart={handleDragStart} 
-          onDragEnd={handleDragEnd}
-        >
-          {/* Trash Zone */}
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <TrashZone isDragging={!!activeId} />
 
-          {/* Waiting Area */}
-           <div className="mb-4">
+           <div className="mb-10">
               <RoomZone 
                 room={INITIAL_ROOMS.find(r => r.id === 'waiting')!} 
                 patients={getPatientsInRoom('waiting')} 
@@ -258,10 +277,8 @@ const App: React.FC = () => {
               />
            </div>
 
-          {/* Map Layout - Flex Row */}
-          <div className="flex flex-wrap items-start justify-start gap-3">
-            
-            <div className="w-full md:w-44 flex flex-col gap-3">
+          <div className="flex flex-wrap items-start justify-center gap-6">
+            <div className="w-full md:w-64 flex flex-col gap-6">
               <RoomZone 
                 room={INITIAL_ROOMS.find(r => r.id === 'isolation')!} 
                 patients={getPatientsInRoom('isolation')} 
@@ -276,35 +293,35 @@ const App: React.FC = () => {
               />
             </div>
 
-            <div className="w-full md:w-44">
+            <div className="w-full md:w-64">
                <RoomZone 
                 room={INITIAL_ROOMS.find(r => r.id === 'bn3')!} 
                 patients={getPatientsInRoom('bn3')} 
                 onPatientClick={setSelectedPatient}
                 onPatientDoubleClick={handleToggleLongTerm}
-                className="min-h-[300px]" 
+                className="min-h-[400px]" 
               />
             </div>
-            <div className="w-full md:w-44">
+            <div className="w-full md:w-64">
                <RoomZone 
                 room={INITIAL_ROOMS.find(r => r.id === 'bn2')!} 
                 patients={getPatientsInRoom('bn2')} 
                 onPatientClick={setSelectedPatient}
                 onPatientDoubleClick={handleToggleLongTerm}
-                className="min-h-[300px]"
+                className="min-h-[400px]"
               />
             </div>
-            <div className="w-full md:w-44">
+            <div className="w-full md:w-64">
                <RoomZone 
                 room={INITIAL_ROOMS.find(r => r.id === 'bn1')!} 
                 patients={getPatientsInRoom('bn1')} 
                 onPatientClick={setSelectedPatient}
                 onPatientDoubleClick={handleToggleLongTerm}
-                className="min-h-[300px]"
+                className="min-h-[400px]"
               />
             </div>
 
-            <div className="w-full md:w-44 flex flex-col gap-3">
+            <div className="w-full md:w-64 flex flex-col gap-6">
               <RoomZone 
                 room={INITIAL_ROOMS.find(r => r.id === 'officer')!} 
                 patients={getPatientsInRoom('officer')} 
@@ -319,13 +336,13 @@ const App: React.FC = () => {
               />
             </div>
 
-            <div className="w-full md:w-44 ml-12 flex flex-col gap-3">
+            <div className="w-full md:w-64 flex flex-col gap-6">
               <RoomZone 
                 room={INITIAL_ROOMS.find(r => r.id === 'post_op')!} 
                 patients={getPatientsInRoom('post_op')} 
                 onPatientClick={setSelectedPatient}
                 onPatientDoubleClick={handleToggleLongTerm}
-                className="min-h-[144px]"
+                className="min-h-[180px]"
               />
               <RoomZone 
                 room={INITIAL_ROOMS.find(r => r.id === 'emergency')!} 
@@ -339,54 +356,25 @@ const App: React.FC = () => {
 
           <DragOverlay>
             {activePatient ? (
-              <PatientMeeple patient={activePatient} onClick={() => {}} />
+              <PatientMeeple patient={activePatient} onClick={() => {}} className="scale-110" />
             ) : null}
           </DragOverlay>
         </DndContext>
       </main>
 
-      {/* Modals */}
-      <Importer 
-        isOpen={isImportOpen} 
-        onClose={() => setIsImportOpen(false)} 
-        onImport={handleImport} 
-        isParsing={isParsing}
-      />
-
+      <Importer isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} onImport={handleImport} isParsing={isParsing} />
       <PatientDetails 
-        patient={selectedPatient} 
-        onClose={() => setSelectedPatient(null)} 
-        onDelete={handleDeletePatient}
-        onUpdate={handleUpdatePatient}
+        patient={selectedPatient} onClose={() => setSelectedPatient(null)} 
+        onDelete={handleDeletePatient} onUpdate={handleUpdatePatient}
         roomName={INITIAL_ROOMS.find(r => r.id === selectedPatient?.roomId)?.name}
-        onOpenDischarge={(p) => {
-            setDischargePatient(p);
-            setIsDischargeOpen(true);
-        }}
+        onOpenDischarge={(p) => { setDischargePatient(p); setIsDischargeOpen(true); }}
       />
-      
       <DischargePaperModal 
-        patient={dischargePatient}
-        isOpen={isDischargeOpen}
-        onClose={() => setIsDischargeOpen(false)}
-        onSave={handleSaveDischargeInfo}
-        nextPaperNumber={nextPaperNumber}
+        patient={dischargePatient} isOpen={isDischargeOpen} onClose={() => setIsDischargeOpen(false)}
+        onSave={handleSaveDischargeInfo} nextPaperNumber={nextPaperNumber}
       />
-
-      <BulkDischargeModal 
-        patients={patients}
-        isOpen={isBulkDischargeOpen}
-        onClose={() => setIsBulkDischargeOpen(false)}
-        onSave={handleSaveDischargeInfo}
-      />
-
-      {isTempSheetOpen && (
-        <TemperatureSheet 
-          patients={patients} 
-          onClose={() => setIsTempSheetOpen(false)} 
-        />
-      )}
-
+      <BulkDischargeModal patients={patients} isOpen={isBulkDischargeOpen} onClose={() => setIsBulkDischargeOpen(false)} onSave={handleSaveDischargeInfo} />
+      {isTempSheetOpen && <TemperatureSheet patients={patients} onClose={() => setIsTempSheetOpen(false)} />}
     </div>
   );
 };

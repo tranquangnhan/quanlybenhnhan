@@ -5,7 +5,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Đại đội QY 24</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏥</text></svg>">
+    <!-- Updated Favicon to match new logo -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><defs><linearGradient id=%22g%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22><stop offset=%220%25%22 stop-color=%22%23ef4444%22 /><stop offset=%22100%25%22 stop-color=%22%23e11d48%22 /></linearGradient></defs><rect width=%22100%22 height=%22100%22 rx=%2225%22 fill=%22url(%23g)%22 /><circle cx=%2250%22 cy=%2250%22 r=%2225%22 fill=%22white%22 /><path d=%22M35 50 L65 50 M50 35 L50 65%22 stroke=%22%23dc2626%22 stroke-width=%228%22 stroke-linecap=%22round%22 /></svg>">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -62,7 +63,8 @@
         "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
         "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
         "@dnd-kit/core": "https://aistudiocdn.com/@dnd-kit/core@^6.3.1",
-        "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0"
+        "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+        "xlsx": "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
       }
     }
     </script>
@@ -95,152 +97,6 @@
                  </button>
               </div>
            </div>
-        </div>
-    </div>
-
-    <!-- Hidden Template Containers for Vanilla JS logic -->
-    <div id="appContainer" class="hidden p-4 md:p-6 lg:p-8 max-w-7xl mx-auto relative print:hidden">
-         <!-- Navbar (Simple) -->
-         <header class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4 shadow-sm mb-6 rounded-2xl">
-             <div class="flex items-center gap-3">
-                 <div class="w-10 h-10 bg-red-600 rounded-xl shadow-lg flex items-center justify-center text-white font-bold text-lg">
-                    <i class="fas fa-notes-medical"></i>
-                 </div>
-                 <h1 class="text-xl font-bold">Đại đội QY 24</h1>
-             </div>
-             <div class="flex gap-2">
-                 <button id="printBtn" class="bg-blue-500 text-white px-4 py-2 rounded-lg font-bold">In Phiếu</button>
-                 <button id="importBtn" class="bg-gray-900 text-white px-4 py-2 rounded-lg font-bold">Import</button>
-             </div>
-         </header>
-
-         <!-- Filters -->
-         <div class="mb-4 flex gap-4">
-             <input type="text" id="searchInput" placeholder="Search..." class="border rounded px-2 py-1">
-             <select id="rankFilter" class="border rounded px-2 py-1">
-                 <option value="">All Ranks</option>
-                 <option value="h1">H1</option>
-                 <option value="h3">H3</option>
-             </select>
-         </div>
-
-         <!-- Waiting Room -->
-         <div id="waiting-zone" class="mb-4"></div>
-
-         <!-- Main Grid -->
-         <div class="flex flex-wrap items-start justify-start gap-3">
-             <div class="w-full md:w-44 flex flex-col gap-3">
-                 <div id="isolation-zone" class="h-auto"></div>
-                 <div id="ke_bn3-zone" class="h-auto"></div>
-             </div>
-             <div class="w-full md:w-44"><div id="bn3-zone"></div></div>
-             <div class="w-full md:w-44"><div id="bn2-zone"></div></div>
-             <div class="w-full md:w-44"><div id="bn1-zone"></div></div>
-             <div class="w-full md:w-44 flex flex-col gap-3">
-                 <div id="officer-zone"></div>
-                 <div id="injection-zone"></div>
-             </div>
-             <div class="w-full md:w-44 ml-12"><div id="post_op-zone"></div></div>
-         </div>
-    </div>
-
-    <!-- Import Modal -->
-    <div id="importModal" class="hidden fixed inset-0 bg-black/40 z-[100] flex items-center justify-center">
-        <div class="bg-white p-6 rounded-2xl w-full max-w-lg">
-            <h2 class="text-xl font-bold mb-4">Import Data</h2>
-            <textarea id="importText" class="w-full h-40 border p-2 rounded mb-4" placeholder="Paste data..."></textarea>
-            <div class="flex justify-end gap-2">
-                <button id="cancelImport" class="px-4 py-2 bg-gray-200 rounded">Cancel</button>
-                <button id="runImport" class="px-4 py-2 bg-blue-500 text-white rounded"> <i class="fas fa-magic"></i> Phân tích & Nhập</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Details Modal -->
-    <div id="detailsModal" class="hidden fixed inset-0 bg-black/20 z-[100] flex items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden relative border-4 border-white animate-pop-in my-8">
-             <div class="h-24 bg-gradient-to-r from-blue-400 to-purple-400 w-full absolute top-0 left-0 z-0"></div>
-             <button id="closeDetails" class="absolute top-4 right-4 z-10 bg-white/20 p-2 rounded-full text-white"><i class="fas fa-times"></i></button>
-             
-             <div class="relative z-0 pt-12 px-6 pb-6 flex flex-col items-center">
-                 <div id="detailAvatar" class="w-20 h-20 bg-white rounded-full border-4 border-white shadow-lg flex items-center justify-center text-3xl mb-4"></div>
-                 <h2 id="detailName" class="text-2xl font-bold text-gray-800 text-center mb-1"></h2>
-                 <span id="detailId" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-6"></span>
-                 
-                 <div class="w-full space-y-3">
-                     <div class="p-3 bg-gray-50 rounded-xl"><p class="text-[10px] text-gray-500 font-bold">DOB</p><p id="detailDob" class="font-semibold"></p></div>
-                     <div class="p-3 bg-gray-50 rounded-xl"><p class="text-[10px] text-gray-500 font-bold">Rank/Role</p><p id="detailRankRole" class="font-semibold"></p></div>
-                     <div class="p-3 bg-gray-50 rounded-xl"><p class="text-[10px] text-gray-500 font-bold">Unit</p><p id="detailUnit" class="font-semibold"></p></div>
-                     <div class="p-3 bg-red-50 border border-red-100 rounded-xl"><p class="text-[10px] text-gray-500 font-bold">Diagnosis</p><p id="detailDiagnosis" class="font-semibold text-red-700"></p></div>
-                     
-                     <div class="flex items-center p-3 rounded-xl bg-orange-50 border border-orange-100">
-                         <div class="flex-1">
-                             <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Theo dõi nhiệt độ</p>
-                             <select id="detailMonitoring" class="mt-1 block w-full bg-white border border-gray-300 py-1 px-2 rounded text-sm font-semibold">
-                                 <option value="stc">Sáng / Trưa / Chiều</option>
-                                 <option value="3h">3 Giờ / Lần</option>
-                                 <option value="none">Không đo</option>
-                             </select>
-                         </div>
-                     </div>
-                 </div>
-
-                 <!-- Discharge Paper Section -->
-                 <div class="w-full mt-6 pt-6 border-t border-gray-100">
-                    <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                        <i class="fas fa-file-medical text-blue-500"></i> Thông tin ra viện
-                    </h3>
-                    
-                    <div class="space-y-3 text-sm">
-                        <div>
-                            <label class="block text-gray-500 text-xs font-bold mb-1">Quê quán</label>
-                            <input type="text" id="dischargeHometown" class="w-full border rounded p-2 bg-gray-50" placeholder="Nhập quê quán...">
-                        </div>
-                        <div>
-                            <label class="block text-gray-500 text-xs font-bold mb-1">Ngày ra viện</label>
-                            <input type="date" id="dischargeDate" class="w-full border rounded p-2 bg-gray-50">
-                        </div>
-                        <div>
-                            <label class="block text-gray-500 text-xs font-bold mb-1">Thuốc điều trị</label>
-                            <textarea id="dischargeMeds" rows="3" class="w-full border rounded p-2 bg-gray-50 text-xs"></textarea>
-                        </div>
-                        <div>
-                            <label class="block text-gray-500 text-xs font-bold mb-1">Tình trạng ra viện</label>
-                            <textarea id="dischargeCondition" rows="3" class="w-full border rounded p-2 bg-gray-50 text-xs"></textarea>
-                        </div>
-                        
-                        <button id="downloadDischargeBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-xl flex items-center justify-center gap-2 mt-2 shadow-md shadow-green-200 transition">
-                            <i class="fas fa-file-word"></i> In Giấy Ra Viện (.doc)
-                        </button>
-                    </div>
-                 </div>
-
-                 <!-- Buttons -->
-                 <button id="deleteBtn" class="mt-6 w-full bg-red-50 text-red-600 font-bold py-3 rounded-xl border border-red-100">Xóa Bệnh Nhân</button>
-                 
-                 <!-- Delete Confirm UI -->
-                 <div id="deleteConfirmUI" class="hidden mt-6 w-full p-4 bg-red-50 rounded-xl border border-red-100">
-                     <p class="text-red-600 font-bold text-center mb-3">Bạn chắc chắn muốn xóa?</p>
-                     <div class="flex gap-3">
-                         <button id="cancelDelete" class="flex-1 py-2 bg-white border border-gray-200 rounded-lg">Hủy</button>
-                         <button id="confirmDelete" class="flex-1 py-2 bg-red-500 text-white rounded-lg shadow-md">Xác nhận</button>
-                     </div>
-                 </div>
-             </div>
-        </div>
-    </div>
-
-    <!-- Print Modal -->
-    <div id="printModal" class="hidden fixed inset-0 bg-gray-200 z-[100] flex flex-col items-center">
-        <div class="w-full bg-white p-4 flex justify-between items-center shadow-md">
-            <h2 class="font-bold">Bản In</h2>
-            <div class="flex gap-2">
-                <button id="closePrint" class="px-4 py-2 bg-gray-100 rounded">Đóng</button>
-                <button id="downloadPdfBtn" class="px-4 py-2 bg-blue-600 text-white rounded">Tải PDF</button>
-            </div>
-        </div>
-        <div class="p-8 overflow-auto w-full flex justify-center">
-            <div id="printableArea" class="bg-white shadow-xl" style="width: 280mm; min-height: 190mm; padding: 15px;"></div>
         </div>
     </div>
 <script type="module" src="/index.tsx"></script>

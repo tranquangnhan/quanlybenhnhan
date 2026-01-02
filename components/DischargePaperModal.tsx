@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { DischargeInfo, Patient } from '../types';
-import { X, FileText, ClipboardList, Save } from 'lucide-react';
+import { X, FileText, ClipboardList, Save, Sparkles, Loader2 } from 'lucide-react';
+import { generateDischargeCondition } from '../services/geminiService';
 
 interface Props {
   patient: Patient | null;
@@ -21,16 +22,13 @@ const DischargePaperModal: React.FC<Props> = ({ patient, isOpen, onClose, onSave
   const [role, setRole] = useState('');
   const [rank, setRank] = useState('');
   const [diagnosis, setDiagnosis] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  // Helper to clean diagnosis string
   const cleanDiagnosis = (d: string) => {
     if (!d) return "";
     let cleaned = d;
-    // Remove "Sốt," or "Sốt " at the start (case insensitive)
     cleaned = cleaned.replace(/^Sốt[,]?\s+/i, '');
-    // Remove "N" followed by numbers at the end (e.g. N1, N12)
     cleaned = cleaned.replace(/\s*N\d+$/i, '');
-    // Capitalize first letter
     cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
     return cleaned.trim();
   };
@@ -51,7 +49,6 @@ const DischargePaperModal: React.FC<Props> = ({ patient, isOpen, onClose, onSave
 
   useEffect(() => {
     if (patient && isOpen) {
-        // If data is already saved, load it
         if (patient.dischargeInfo) {
             setPaperNumber(patient.dischargeInfo.paperNumber);
             setHometown(patient.dischargeInfo.hometown);
@@ -63,16 +60,11 @@ const DischargePaperModal: React.FC<Props> = ({ patient, isOpen, onClose, onSave
             setDiagnosis(patient.dischargeInfo.diagnosis);
             setDiscipline(patient.dischargeInfo.discipline);
         } else {
-            // New discharge setup
-            setPaperNumber(nextPaperNumber); // Auto increment
+            setPaperNumber(nextPaperNumber);
             setHometown('');
             setDischargeDate(new Date().toISOString().split('T')[0]);
             setDiscipline('Tốt');
-            
-            // Map Rank
             setRank(mapRank(patient.rank));
-
-            // Map Role
             const r = (patient.role || '').toLowerCase().trim();
             let mappedRole = patient.role;
             if (r === 'cs') mappedRole = 'Chiến sĩ';
@@ -81,18 +73,15 @@ const DischargePaperModal: React.FC<Props> = ({ patient, isOpen, onClose, onSave
             else if (r === 'bt') mappedRole = 'Trung đội trưởng';
             else if (r === 'ct') mappedRole = 'Đại đội trưởng';
             setRole(mappedRole);
-
-            // Clean and set Diagnosis
             setDiagnosis(cleanDiagnosis(patient.diagnosis));
-            
             const d = (patient.diagnosis || '').toLowerCase();
-            
             if (d.includes('sốt')) {
                 setTreatments("- Kháng sinh\n- Giảm ho\n- Giảm đau, hạ sốt\n- Kháng histamin\n- Sinh tố");
             } else {
                 setTreatments("- Kháng sinh\n- Giảm đau, hạ sốt\n- Sinh tố");
             }
-
+            
+            // Default condition template
             if ((d.includes('viêm họng') || d.includes('họng')) && d.includes('sốt')) {
                 setCondition("Tỉnh táo, tiếp xúc tốt, dấu hiệu sinh tồn ổn định. Toàn trạng ổn định, hết sốt, hết ho, hết sổ mũi, hết đau họng, ăn ngủ sinh hoạt bình thường.");
             } else if (d.includes('amydal') || d.includes('amidan')) {
@@ -104,58 +93,39 @@ const DischargePaperModal: React.FC<Props> = ({ patient, isOpen, onClose, onSave
     }
   }, [patient, isOpen, nextPaperNumber]);
 
-  if (!isOpen || !patient) return null;
-
-  const mapUnit = (u: string) => {
-     let mapped = u || '';
-     mapped = mapped.replace(/c(\d+)/gi, 'Đại đội $1');
-     mapped = mapped.replace(/d(\d+)/gi, 'Tiểu đoàn $1');
-     mapped = mapped.replace(/-/g, ' - ');
-     return mapped;
+  const handleAIGenerateCondition = async () => {
+    if (!diagnosis) return;
+    setIsGenerating(true);
+    const aiResult = await generateDischargeCondition(diagnosis);
+    if (aiResult) {
+      // Wrap AI result with fixed template requested by user
+      const finalCondition = `Tỉnh táo, tiếp xúc tốt, dấu hiệu sinh tồn ổn định. Toàn trạng ổn định, ${aiResult}, ăn ngủ sinh hoạt bình thường.`;
+      setCondition(finalCondition);
+    }
+    setIsGenerating(false);
   };
 
+  if (!isOpen || !patient) return null;
+
   const saveData = () => {
-    const info: DischargeInfo = {
-        paperNumber,
-        hometown,
-        dischargeDate,
-        meds: treatments,
-        condition,
-        rank,
-        role,
-        diagnosis,
-        discipline
-    };
+    const info: DischargeInfo = { paperNumber, hometown, dischargeDate, meds: treatments, condition, rank, role, diagnosis, discipline };
     onSave(patient.id, info);
     return info;
   };
 
-  const handleSaveOnly = () => {
-    saveData();
-    onClose(); // Close after saving, or maybe keep open? Closing feels better UX here.
-  };
-
   const generateDischargePaper = () => {
-      // Save data before generating
       saveData();
-
       const today = new Date();
       const day = today.getDate();
       const month = today.getMonth() + 1;
       const year = today.getFullYear();
-
-      const dischargeD = new Date(dischargeDate);
-      const dDay = dischargeD.getDate();
-      const dMonth = dischargeD.getMonth() + 1;
-      const dYear = dischargeD.getFullYear();
-      const formattedDischargeDate = `${dDay < 10 ? '0'+dDay : dDay}/${dMonth < 10 ? '0'+dMonth : dMonth}/${dYear}`;
-
+      const dD = new Date(dischargeDate);
+      const formattedRV = `${dD.getDate().toString().padStart(2,'0')}/${(dD.getMonth()+1).toString().padStart(2,'0')}/${dD.getFullYear()}`;
       const medsHtml = treatments.split('\n').map(line => `<div style="margin-bottom: 2px;">${line}</div>`).join('');
-      
-      const mappedUnit = mapUnit(patient.unit);
+      const mappedUnit = (patient.unit || '').replace(/c(\d+)/gi, 'Đại đội $1').replace(/d(\d+)/gi, 'Tiểu đoàn $1').replace(/-/g, ' - ');
       
       const htmlContent = `
-        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+         <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head>
            <meta charset="utf-8">
            <title>Giấy Ra Viện</title>
@@ -223,7 +193,7 @@ const DischargePaperModal: React.FC<Props> = ({ patient, isOpen, onClose, onSave
                  <div class="content-line">Chức vụ: ${role}</div>
                  <div class="content-line">Đơn vị: ${mappedUnit}</div>
                  <div class="content-line">Quê quán: ${hometown}</div>
-                 <div class="content-line">Ngày vào viện: ${patient.admissionDate} – Ngày ra viện: ${formattedDischargeDate}</div>
+                 <div class="content-line">Ngày vào viện: ${patient.admissionDate} – Ngày ra viện: ${formattedRV}</div>
                 <div class="content-line italic">
                     Chẩn đoán: 
                     <span style="font-weight: bold; font-style: italic;">
@@ -261,137 +231,118 @@ const DischargePaperModal: React.FC<Props> = ({ patient, isOpen, onClose, onSave
         </body>
         </html>
       `;
-
       const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
-      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
+      link.href = URL.createObjectURL(blob);
       link.download = `giay-ra-vien-${patient.name}.doc`;
-      document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
   };
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[110] flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-pop-in relative" onClick={e => e.stopPropagation()}>
-             <div className="bg-green-50 p-4 border-b border-green-100 flex justify-between items-center">
-                <h3 className="text-lg font-bold text-green-800 flex items-center gap-2">
-                    <ClipboardList size={20} />
-                    Thông tin ra viện
+        <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-3xl overflow-hidden animate-pop-in relative border-4 border-white" onClick={e => e.stopPropagation()}>
+             <div className="bg-green-50 p-6 border-b border-green-100 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-green-900 flex items-center gap-3">
+                    <ClipboardList size={28} />
+                    GIẤY RA VIỆN CHI TIẾT
                 </h3>
-                <button onClick={onClose} className="p-1 hover:bg-green-200 rounded-full transition">
-                    <X size={20} className="text-green-700" />
+                <button onClick={onClose} className="p-2 hover:bg-green-100 rounded-full transition">
+                    <X size={24} className="text-green-700" />
                 </button>
              </div>
              
-             <div className="p-6 space-y-4 text-sm">
-                
-                <div className="grid grid-cols-3 gap-4">
+             <div className="p-8 space-y-6">
+                <div className="grid grid-cols-3 gap-6">
                     <div>
-                        <label className="block text-gray-600 text-xs font-bold mb-1">Số giấy</label>
-                        <input 
-                            type="text" 
-                            value={paperNumber} 
-                            onChange={(e) => setPaperNumber(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-400 outline-none text-center font-bold text-red-600" 
+                        <label className="block text-gray-600 text-sm font-bold mb-2 uppercase tracking-wide">Số giấy</label>
+                        <input type="text" value={paperNumber} onChange={(e) => setPaperNumber(e.target.value)}
+                            className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-green-400 outline-none text-center font-bold text-red-600 text-2xl bg-gray-50" 
                         />
                     </div>
                      <div>
-                        <label className="block text-gray-600 text-xs font-bold mb-1">Cấp bậc</label>
-                        <input 
-                            type="text" 
-                            value={rank} 
-                            onChange={(e) => setRank(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-400 outline-none" 
+                        <label className="block text-gray-600 text-sm font-bold mb-2 uppercase tracking-wide">Cấp bậc</label>
+                        <input type="text" value={rank} onChange={(e) => setRank(e.target.value)}
+                            className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-green-400 outline-none text-lg font-bold bg-gray-50" 
                         />
                     </div>
                      <div>
-                        <label className="block text-gray-600 text-xs font-bold mb-1">Chức vụ</label>
-                        <input 
-                            type="text" 
-                            value={role} 
-                            onChange={(e) => setRole(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-400 outline-none" 
+                        <label className="block text-gray-600 text-sm font-bold mb-2 uppercase tracking-wide">Chức vụ</label>
+                        <input type="text" value={role} onChange={(e) => setRole(e.target.value)}
+                            className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-green-400 outline-none text-lg font-bold bg-gray-50" 
                         />
                     </div>
                 </div>
 
                 <div>
-                    <label className="block text-gray-600 text-xs font-bold mb-1">Quê quán</label>
-                    <input 
-                        type="text" 
-                        value={hometown} 
-                        onChange={(e) => setHometown(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-400 outline-none" 
-                        placeholder="Nhập quê quán..."
+                    <label className="block text-gray-600 text-sm font-bold mb-2 uppercase tracking-wide">Quê quán</label>
+                    <input type="text" value={hometown} onChange={(e) => setHometown(e.target.value)}
+                        className="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-green-400 outline-none text-lg font-bold bg-gray-50" 
+                        placeholder="Thành phố, Tỉnh..."
                     />
                 </div>
                 
                 <div>
-                     <label className="block text-gray-600 text-xs font-bold mb-1">Chẩn đoán (Đã xử lý)</label>
-                     <input 
-                        type="text" 
-                        value={diagnosis} 
-                        onChange={(e) => setDiagnosis(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-400 outline-none font-semibold text-gray-700"
+                     <label className="block text-gray-600 text-sm font-bold mb-2 uppercase tracking-wide">Chẩn đoán (Sau điều trị)</label>
+                     <input type="text" value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)}
+                        className="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-green-400 outline-none font-bold text-gray-800 text-lg bg-gray-50"
                      />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-gray-600 text-xs font-bold mb-1">Ngày ra viện</label>
-                        <input 
-                            type="date" 
-                            value={dischargeDate} 
-                            onChange={(e) => setDischargeDate(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-400 outline-none"
+                        <label className="block text-gray-600 text-sm font-bold mb-2 uppercase tracking-wide">Ngày ra viện</label>
+                        <input type="date" value={dischargeDate} onChange={(e) => setDischargeDate(e.target.value)}
+                            className="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-green-400 outline-none text-lg font-bold bg-gray-50"
                         />
                     </div>
                     <div>
-                         <label className="block text-gray-600 text-xs font-bold mb-1">Chấp hành kỷ luật</label>
-                         <input 
-                            type="text" 
-                            value={discipline} 
-                            onChange={(e) => setDiscipline(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-400 outline-none"
+                         <label className="block text-gray-600 text-sm font-bold mb-2 uppercase tracking-wide">Kỷ luật</label>
+                         <input type="text" value={discipline} onChange={(e) => setDiscipline(e.target.value)}
+                            className="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-green-400 outline-none text-lg font-bold bg-gray-50"
                          />
                     </div>
                 </div>
 
-                <div>
-                    <label className="block text-gray-600 text-xs font-bold mb-1">Thuốc điều trị</label>
-                    <textarea 
-                        rows={4} 
-                        value={treatments}
-                        onChange={(e) => setTreatments(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-400 outline-none text-xs"
-                    ></textarea>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-gray-600 text-sm font-bold mb-2 uppercase tracking-wide">Thuốc điều trị</label>
+                        <textarea rows={5} value={treatments} onChange={(e) => setTreatments(e.target.value)}
+                            className="w-full border-2 border-gray-100 rounded-xl p-4 focus:border-green-400 outline-none text-lg font-medium bg-gray-50 leading-relaxed"
+                        ></textarea>
+                    </div>
+                    <div>
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-gray-600 text-sm font-bold uppercase tracking-wide">Tình trạng ra viện</label>
+                            <button 
+                                onClick={handleAIGenerateCondition}
+                                disabled={isGenerating}
+                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold transition-all
+                                    ${isGenerating 
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                        : 'bg-blue-50 text-blue-600 hover:bg-blue-100 active:scale-95 border border-blue-100 shadow-sm'
+                                    }`}
+                            >
+                                {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                                {isGenerating ? 'Đang tạo...' : 'AI Gợi ý'}
+                            </button>
+                        </div>
+                        <textarea rows={5} value={condition} onChange={(e) => setCondition(e.target.value)}
+                            className={`w-full border-2 border-gray-100 rounded-xl p-4 focus:border-green-400 outline-none text-lg font-medium bg-gray-50 leading-relaxed transition-all
+                                ${isGenerating ? 'opacity-50 animate-pulse' : 'opacity-100'}`}
+                        ></textarea>
+                    </div>
                 </div>
                 
-                <div>
-                    <label className="block text-gray-600 text-xs font-bold mb-1">Tình trạng ra viện</label>
-                    <textarea 
-                        rows={3} 
-                        value={condition}
-                        onChange={(e) => setCondition(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-400 outline-none text-xs"
-                    ></textarea>
-                </div>
-                
-                <div className="flex gap-3 pt-2">
-                    <button 
-                        onClick={handleSaveOnly}
-                        className="flex-1 bg-white hover:bg-gray-50 text-green-700 font-bold py-3 rounded-xl flex items-center justify-center gap-2 border border-green-200 shadow-sm transition transform active:scale-95"
+                <div className="flex gap-4 pt-4">
+                    <button onClick={() => { saveData(); onClose(); }}
+                        className="flex-1 bg-white hover:bg-gray-50 text-green-700 font-bold py-4 rounded-2xl flex items-center justify-center gap-3 border-2 border-green-200 shadow-sm transition transform active:scale-95 text-base uppercase tracking-wider"
                     >
-                        <Save size={20} /> Lưu thông tin
+                        <Save size={20} /> Lưu Lại
                     </button>
-                    
-                    <button 
-                        onClick={generateDischargePaper}
-                        className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-200 transition transform active:scale-95"
+                    <button onClick={generateDischargePaper}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-green-100 transition transform active:scale-95 text-base uppercase tracking-wider"
                     >
-                        <FileText size={20} /> Tải Xuống
+                        <FileText size={20} /> Tải (.doc)
                     </button>
                 </div>
              </div>
