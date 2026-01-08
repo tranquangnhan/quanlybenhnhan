@@ -35,16 +35,61 @@ const DischargePaperModal: React.FC<Props> = ({ patient, isOpen, onClose, onSave
 
   const mapRank = (r: string) => {
     const lower = (r || '').toLowerCase();
-    if (lower.includes('h1')) return 'Hạ sĩ';
-    if (lower.includes('h2')) return 'Trung sĩ';
+    // Officers (Tá) - Check double slashes first
+    if (lower.includes('4//')) return 'Đại tá';
+    if (lower.includes('3//')) return 'Thượng tá';
+    if (lower.includes('2//')) return 'Trung tá';
+    if (lower.includes('1//')) return 'Thiếu tá';
+    
+    // Officers (Úy)
+    if (lower.includes('4/')) return 'Đại úy';
+    if (lower.includes('3/')) return 'Thượng úy';
+    if (lower.includes('2/')) return 'Trung úy';
+    if (lower.includes('1/')) return 'Thiếu úy';
+
+    // NCOs & Enlisted
     if (lower.includes('h3')) return 'Thượng sĩ';
+    if (lower.includes('h2')) return 'Trung sĩ';
+    if (lower.includes('h1')) return 'Hạ sĩ';
     if (lower.includes('b1')) return 'Binh nhất';
     if (lower.includes('b2')) return 'Binh nhì';
-    if (lower.includes('1/')) return 'Thiếu úy';
-    if (lower.includes('2/')) return 'Trung úy';
-    if (lower.includes('3/')) return 'Thượng úy';
-    if (lower.includes('4/')) return 'Đại úy';
+    
     return r;
+  };
+
+  const mapRole = (r: string) => {
+    const lower = (r || '').toLowerCase().trim();
+    const roleMap: Record<string, string> = {
+        'cs': 'Chiến sĩ',
+        'at': 'Tiểu đội trưởng',
+        'kđt': 'Khẩu đội trưởng',
+        'ctv': 'Chính trị viên',
+        'ctvp': 'Chính trị viên phó',
+        'ct': 'Đại đội trưởng',
+        'pct': 'Phó đại đội trưởng',
+        'tx': 'Trưởng xe',
+        'tlqc': 'Trợ lý quần chúng',
+        'nvcntt': 'Nhân viên CNTT',
+        'nvtk': 'Nhân viên thống kê',
+        'tltc': 'Trợ lý tác chiến',
+        'pcnct': 'Phó chủ nhiệm chính trị',
+        'nvna': 'Nhân viên nấu ăn',
+        'nđ': 'Nạp đạn',
+        'pt': 'Pháo thủ',
+        'csm': 'Chiến sĩ mới',
+        'lxe': 'Lái xe',
+        'tsc': 'Thợ sửa chữa',
+        'dt': 'Tiểu đoàn trưởng',
+        'pdt': 'Tiểu đoàn phó',
+        'nvql': 'Nhân viên quản lý',
+        'bt': 'Trung đội trưởng',
+        'tlhc': 'Trợ lý hậu cần',
+        'tlbvệ': 'Trợ lý bảo vệ',
+        'nvqn': 'Nhân viên quân nhu',
+        'tlth': 'Trợ lý tuyên huấn',
+        'nv cơ yếu': 'Nhân viên cơ yếu'
+    };
+    return roleMap[lower] || r;
   };
 
   useEffect(() => {
@@ -65,14 +110,8 @@ const DischargePaperModal: React.FC<Props> = ({ patient, isOpen, onClose, onSave
             setDischargeDate(new Date().toISOString().split('T')[0]);
             setDiscipline('Tốt');
             setRank(mapRank(patient.rank));
-            const r = (patient.role || '').toLowerCase().trim();
-            let mappedRole = patient.role;
-            if (r === 'cs') mappedRole = 'Chiến sĩ';
-            else if (r === 'at') mappedRole = 'Tiểu đội trưởng';
-            else if (r === 'kđt') mappedRole = 'Khẩu đội trưởng';
-            else if (r === 'bt') mappedRole = 'Trung đội trưởng';
-            else if (r === 'ct') mappedRole = 'Đại đội trưởng';
-            setRole(mappedRole);
+            setRole(mapRole(patient.role));
+            
             setDiagnosis(cleanDiagnosis(patient.diagnosis));
             const d = (patient.diagnosis || '').toLowerCase();
             if (d.includes('sốt')) {
@@ -116,9 +155,11 @@ const DischargePaperModal: React.FC<Props> = ({ patient, isOpen, onClose, onSave
   const generateDischargePaper = () => {
       saveData();
       const today = new Date();
-      const day = today.getDate();
-      const month = today.getMonth() + 1;
+      // Format signature date with leading zeros
+      const day = today.getDate().toString().padStart(2, '0');
+      const month = (today.getMonth() + 1).toString().padStart(2, '0');
       const year = today.getFullYear();
+      
       const dD = new Date(dischargeDate);
       const formattedRV = `${dD.getDate().toString().padStart(2,'0')}/${(dD.getMonth()+1).toString().padStart(2,'0')}/${dD.getFullYear()}`;
       const medsHtml = treatments.split('\n').map(line => `<div style="margin-bottom: 2px;">${line}</div>`).join('');

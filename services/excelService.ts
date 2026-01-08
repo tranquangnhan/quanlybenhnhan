@@ -20,7 +20,12 @@ export const readExcelFile = async (file: File): Promise<any[]> => {
              throw new Error("XLSX library failed to load. Please check the CDN link or internet connection.");
         }
 
-        const workbook = lib.read(new Uint8Array(data), { type: 'array' });
+        // Cấu hình đọc ngày tháng chính xác
+        const workbook = lib.read(new Uint8Array(data), { 
+            type: 'array',
+            cellDates: true, // Đọc cell date dưới dạng Date object để xử lý format
+            dateNF: 'dd/mm/yyyy' // Định dạng ngày tháng mặc định
+        });
         
         if (workbook.SheetNames.length === 0) {
             throw new Error("File Excel không có dữ liệu (Sheet trống).");
@@ -31,7 +36,15 @@ export const readExcelFile = async (file: File): Promise<any[]> => {
         const targetSheetName = workbook.SheetNames[lastSheetIndex];
         const worksheet = workbook.Sheets[targetSheetName];
         
-        const jsonData = lib.utils.sheet_to_json(worksheet, { header: 1 });
+        // raw: false -> Lấy giá trị hiển thị (String) thay vì giá trị gốc (Số serial date)
+        // dateNF -> Định dạng ngày tháng nếu Excel chưa định dạng
+        const jsonData = lib.utils.sheet_to_json(worksheet, { 
+            header: 1,
+            raw: false, 
+            dateNF: 'dd/mm/yyyy',
+            defval: ''
+        });
+
         resolve(jsonData);
       } catch (err) {
         console.error("Excel processing error:", err);
@@ -54,12 +67,17 @@ export const formatExcelDataForAI = (rawData: any[]): string => {
         return row.map(cell => {
              if (cell === null || cell === undefined) return '';
              
-             // Prevent [object Object] by handling objects gracefully
+             // Vì đã dùng raw: false ở trên, hầu hết dữ liệu đã là string.
+             // Tuy nhiên vẫn xử lý phòng hờ trường hợp thư viện trả về object lạ.
              if (typeof cell === 'object') {
+                 // Nếu lọt lưới 1 Date object
                  if (cell instanceof Date) {
-                     return cell.toLocaleDateString('vi-VN');
+                     const day = cell.getDate().toString().padStart(2, '0');
+                     const month = (cell.getMonth() + 1).toString().padStart(2, '0');
+                     const year = cell.getFullYear();
+                     return `${day}/${month}/${year}`;
                  }
-                 // If it is a generic object, ignore it to prevent [object Object] spam
+                 // Nếu là object khác, convert sang string an toàn hoặc bỏ qua
                  return ''; 
              }
              

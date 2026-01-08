@@ -77,26 +77,62 @@ const BulkDischargeModal: React.FC<Props> = ({ patients, isOpen, onClose, onSave
   // --- Helper Logic for Content Generation (Reused from DischargePaperModal logic) ---
   const mapRank = (r: string) => {
     const lower = (r || '').toLowerCase();
-    if (lower.includes('h1')) return 'Hạ sĩ';
-    if (lower.includes('h2')) return 'Trung sĩ';
+    
+    // Officers (Tá)
+    if (lower.includes('4//')) return 'Đại tá';
+    if (lower.includes('3//')) return 'Thượng tá';
+    if (lower.includes('2//')) return 'Trung tá';
+    if (lower.includes('1//')) return 'Thiếu tá';
+    
+    // Officers (Úy)
+    if (lower.includes('4/')) return 'Đại úy';
+    if (lower.includes('3/')) return 'Thượng úy';
+    if (lower.includes('2/')) return 'Trung úy';
+    if (lower.includes('1/')) return 'Thiếu úy';
+
+    // NCOs & Enlisted
     if (lower.includes('h3')) return 'Thượng sĩ';
+    if (lower.includes('h2')) return 'Trung sĩ';
+    if (lower.includes('h1')) return 'Hạ sĩ';
     if (lower.includes('b1')) return 'Binh nhất';
     if (lower.includes('b2')) return 'Binh nhì';
-    if (lower.includes('1/')) return 'Thiếu úy';
-    if (lower.includes('2/')) return 'Trung úy';
-    if (lower.includes('3/')) return 'Thượng úy';
-    if (lower.includes('4/')) return 'Đại úy';
+    
     return r;
   };
 
   const mapRole = (r: string) => {
-      const lower = (r || '').toLowerCase().trim();
-      if (lower === 'cs') return 'Chiến sĩ';
-      if (lower === 'at') return 'Tiểu đội trưởng';
-      if (lower === 'kđt') return 'Khẩu đội trưởng';
-      if (lower === 'bt') return 'Trung đội trưởng';
-      if (lower === 'ct') return 'Đại đội trưởng';
-      return r || 'Chiến sĩ';
+    const lower = (r || '').toLowerCase().trim();
+    const roleMap: Record<string, string> = {
+        'cs': 'Chiến sĩ',
+        'at': 'Tiểu đội trưởng',
+        'kđt': 'Khẩu đội trưởng',
+        'ctv': 'Chính trị viên',
+        'ctvp': 'Chính trị viên phó',
+        'ct': 'Đại đội trưởng',
+        'pct': 'Phó đại đội trưởng',
+        'tx': 'Trưởng xe',
+        'tlqc': 'Trợ lý quần chúng',
+        'nvcntt': 'Nhân viên CNTT',
+        'nvtk': 'Nhân viên thống kê',
+        'tltc': 'Trợ lý tác chiến',
+        'pcnct': 'Phó chủ nhiệm chính trị',
+        'nvna': 'Nhân viên nấu ăn',
+        'nđ': 'Nạp đạn',
+        'pt': 'Pháo thủ',
+        'csm': 'Chiến sĩ mới',
+        'lxe': 'Lái xe',
+        'tsc': 'Thợ sửa chữa',
+        'dt': 'Tiểu đoàn trưởng',
+        'pdt': 'Tiểu đoàn phó',
+        'nvql': 'Nhân viên quản lý',
+        'bt': 'Trung đội trưởng',
+        'tlhc': 'Trợ lý hậu cần',
+        'tlbvệ': 'Trợ lý bảo vệ',
+        'nvqn': 'Nhân viên quân nhu',
+        'tlth': 'Trợ lý tuyên huấn',
+        'nv cơ yếu': 'Nhân viên cơ yếu'
+    };
+    return roleMap[lower] || r || 'Chiến sĩ';
   };
 
   const mapUnit = (u: string) => {
@@ -140,8 +176,9 @@ const BulkDischargeModal: React.FC<Props> = ({ patients, isOpen, onClose, onSave
     });
 
     const today = new Date();
-    const dDay = today.getDate();
-    const dMonth = today.getMonth() + 1;
+    // Format signature date with leading zeros
+    const dDay = today.getDate().toString().padStart(2, '0');
+    const dMonth = (today.getMonth() + 1).toString().padStart(2, '0');
     const dYear = today.getFullYear();
 
     // Generate inner HTML for each patient
