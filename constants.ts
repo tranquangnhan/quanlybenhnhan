@@ -1,3 +1,4 @@
+
 import { RoomData, RoomType } from './types';
 
 export const INITIAL_ROOMS: RoomData[] = [
